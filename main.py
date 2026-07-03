@@ -21,9 +21,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger(__name__)
 
 
+async def post_init(application: Application):
+    # Runs once the event loop is actually running, so APScheduler can attach to it safely.
+    start_scheduler(application)
+
+
 def main():
     init_db()
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_cmd))
@@ -34,8 +39,6 @@ def main():
     application.add_handler(CommandHandler("cancel", cancel_cmd))
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
-
-    start_scheduler(application)
 
     logger.info("ExpenseTrackB bot starting (long polling)...")
     application.run_polling(allowed_updates=["message", "callback_query"])
